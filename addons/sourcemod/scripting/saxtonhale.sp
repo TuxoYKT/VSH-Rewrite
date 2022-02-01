@@ -388,6 +388,7 @@ ConVar tf_arena_preround_time;
 #include "vsh/bosses/boss_yeti.sp"
 #include "vsh/bosses/boss_zombie.sp"
 #include "vsh/bosses/boss_merasmus.sp"
+#include "vsh/bosses/boss_monoculus.sp"
 
 #include "vsh/bossesmulti/bossmulti_mannbrothers.sp"
 #include "vsh/bossesmulti/bossmulti_seemanseeldier.sp"
@@ -681,6 +682,7 @@ public void OnPluginStart()
 	SaxtonHale_RegisterClass("CUberRanger", VSHClassType_Boss);
 	SaxtonHale_RegisterClass("CVagineer", VSHClassType_Boss);
 	SaxtonHale_RegisterClass("CYeti", VSHClassType_Boss);
+	SaxtonHale_RegisterClass("CMonoculus", VSHClassType_Boss);
 	
 	//Register multi bosses
 	SaxtonHale_RegisterClass("CMannBrothers", VSHClassType_BossMulti);
