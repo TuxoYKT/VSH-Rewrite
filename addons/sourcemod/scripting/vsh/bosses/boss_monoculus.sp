@@ -13,7 +13,7 @@ static float g_flRandomAnimationTimer[TF_MAXPLAYERS];
 static int g_iMonoculusParticle[TF_MAXPLAYERS];
 
 static char g_strMonoculusRoundStart[][] = {
-	"ui/halloween_boss_summoned_fx.wav"
+	"vo/halloween_eyeball/eyeball_biglaugh01.mp3"
 };
 
 static char g_strMonoculusWin[][] = {
