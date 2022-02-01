@@ -273,13 +273,13 @@ methodmap CMonoculus < SaxtonHaleBase
 	{
 		PrecacheModel(MONOCULUS_MODEL);
 		PrecacheModel(EYEPROJECTILE_MODEL);
-		for (int i = 0; i < sizeof(g_strMonoculusRoundStart); i++) PrepareSound(g_strMonoculusRoundStart[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusWin); i++) PrepareSound(g_strMonoculusWin[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusLose); i++) PrepareSound(g_strMonoculusLose[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusRage); i++) PrepareSound(g_strMonoculusRage[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusKill); i++) PrepareSound(g_strMonoculusKill[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusLastMan); i++) PrepareSound(g_strMonoculusLastMan[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusBackStabbed); i++) PrepareSound(g_strMonoculusBackStabbed[i]);
-		for (int i = 0; i < sizeof(g_strMonoculusAttack); i++) PrepareSound(g_strMonoculusAttack[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusRoundStart); i++) PrecacheSound(g_strMonoculusRoundStart[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusWin); i++) PrecacheSound(g_strMonoculusWin[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusLose); i++) PrecacheSound(g_strMonoculusLose[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusRage); i++) PrecacheSound(g_strMonoculusRage[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusKill); i++) PrecacheSound(g_strMonoculusKill[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusLastMan); i++) PrecacheSound(g_strMonoculusLastMan[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusBackStabbed); i++) PrecacheSound(g_strMonoculusBackStabbed[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusAttack); i++) PrecacheSound(g_strMonoculusAttack[i]);
 	}
 };
