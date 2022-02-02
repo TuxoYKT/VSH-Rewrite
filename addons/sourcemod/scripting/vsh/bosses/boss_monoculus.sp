@@ -64,10 +64,10 @@ methodmap CMonoculus < SaxtonHaleBase
 {
 	public CMonoculus(CMonoculus boss)
 	{	
-		boss.iHealthPerPlayer = 600;
+		boss.iHealthPerPlayer = 400;
 		boss.flHealthExponential = 1.05;
 		boss.nClass = TFClass_DemoMan;
-		boss.iMaxRageDamage = 2500;
+		boss.iMaxRageDamage = 2000;
 		
 		g_flMonoculusRageTimer[boss.iClient] = 0.0;
 		g_flMonoculusLastAttack[boss.iClient] = GetGameTime();
@@ -81,14 +81,13 @@ methodmap CMonoculus < SaxtonHaleBase
 	
 	public void GetBossInfo(char[] sInfo, int length)
 	{
-		StrCat(sInfo, length, "\nHealth: Medium");
+		StrCat(sInfo, length, "\nHealth: Low");
 		StrCat(sInfo, length, "\n ");
 		StrCat(sInfo, length, "\nAbilities");
 		StrCat(sInfo, length, "\n- Flight");
-//		StrCat(sInfo, length, "\n- Vortex");
 		StrCat(sInfo, length, "\n ");
 		StrCat(sInfo, length, "\nRage");
-		StrCat(sInfo, length, "\n- Damage requirement: 2500");
+		StrCat(sInfo, length, "\n- Damage requirement: 2000");
 	  	StrCat(sInfo, length, "\n- Rocket Barrage");
 		StrCat(sInfo, length, "\n- 200%% Rage: Extends duration to 15 seconds");
 	}
@@ -114,36 +113,6 @@ methodmap CMonoculus < SaxtonHaleBase
 		vecOrigin[2] += 48.0;
 		SetVariantVector3D(vecOrigin);
 		AcceptEntityInput(iClient, "SetCustomModelOffset");
-
-//		g_iMonoculusParticle[iClient] = TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_CALM, vecOrigin, NULL_VECTOR, true, iClient);	
-
-
-/* 
-		//Set Playermodel
-		int iDemoeyeModel = CreateEntityByName("prop_dynamic");
-		SDKHook(iDemoeyeModel, SDKHook_SetTransmit, HSetTransmit);
-		g_iMonoculusPlayerModel[iClient] = iDemoeyeModel; 
-		
-		SetEntPropFloat(iDemoeyeModel, Prop_Data, "m_flModelScale", 0.80);
-		SetEntPropEnt(iDemoeyeModel, Prop_Send, "m_hOwnerEntity", iClient);
-		DispatchKeyValue(iDemoeyeModel, "model", MONOCULUS_MODEL);
-		DispatchKeyValue(iDemoeyeModel, "spawnflags", "256");
-		DispatchKeyValue(iDemoeyeModel, "solid", "0");
-
-		SetVariantString("general_noise");
-		AcceptEntityInput(g_iMonoculusPlayerModel[iClient], "SetDefaultAnimation");
-
-		//Set Aura particle and parent model
-		float vecOrigin[3], vecAngles[3];
-		GetClientAbsOrigin(iClient, vecOrigin);
-		GetClientAbsAngles(iClient, vecAngles);
-
-		vecOrigin[2] += 40.0;
-
-		TeleportEntity(iDemoeyeModel, vecOrigin, NULL_VECTOR, NULL_VECTOR);
-		DispatchSpawn(iDemoeyeModel);
-		AcceptEntityInput(iDemoeyeModel, "TurnOn", iDemoeyeModel, iDemoeyeModel, 0);
- */	
 	}
 	
 	public void GetModel(char[] sModel, int length)
