@@ -4,6 +4,7 @@
 #define PARTICLE_EYEBALL_AURA_ANGRY		"eb_aura_angry01"
 #define PARTICLE_EYEBALL_AURA_CALM		"eb_aura_calm01"
 #define PARTICLE_EYEBALL_AURA_GRUMPY	"eb_aura_grumpy01"
+#define PARTICLE_EYEBALL_AURA_STUNNED	"eb_aura_stunned01"
 
 static float g_flMonoculusRageTimer[TF_MAXPLAYERS];
 static float g_flMonoculusLastAttack[TF_MAXPLAYERS];
@@ -54,6 +55,10 @@ static char g_strMonoculusBackStabbed[][] = {
 
 static char g_strMonoculusAttack[][] = {
 	"vo/halloween_eyeball/eyeball04.mp3"
+};
+
+static char g_strMonoculusPain[][] = {
+	"vo/halloween_eyeball/eyeball_boss_pain01.mp3"
 };
 /* 
 static char g_strMonoculusTeleport[][] = {
@@ -130,6 +135,7 @@ methodmap CMonoculus < SaxtonHaleBase
 			case VSHSound_Rage: strcopy(sAnim, length, g_strMonoculusRage[GetRandomInt(0,sizeof(g_strMonoculusRage)-1)]);
 			case VSHSound_Lastman: strcopy(sAnim, length, g_strMonoculusLastMan[GetRandomInt(0,sizeof(g_strMonoculusLastMan)-1)]);
 			case VSHSound_Backstab: strcopy(sAnim, length, g_strMonoculusBackStabbed[GetRandomInt(0,sizeof(g_strMonoculusBackStabbed)-1)]);
+			case VSHSound_Pain: strcopy(sAnim, length, g_strMonoculusPain[GetRandomInt(0,sizeof(g_strMonoculusPain)-1)]);
 		}
 	}
 	
@@ -156,7 +162,7 @@ methodmap CMonoculus < SaxtonHaleBase
 
 		if (this.bSuperRage)
 		{
-			g_flMonoculusAttackRateDuringRage[iClient] = 0.5;
+			g_flMonoculusAttackRateDuringRage[iClient] = 0.4;
 			g_iMonoculusParticle[iClient] = TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, iClient);
 			g_flMonoculusRageTimer[iClient] = GetGameTime() + 5.0;
 		}
@@ -193,6 +199,23 @@ methodmap CMonoculus < SaxtonHaleBase
 		
 	}
 
+	public Action OnTakeDamage(int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom)
+	{
+		int iClient = this.iClient;
+		char sInflictor[32];
+		GetEdictClassname(inflictor, sInflictor, sizeof(sInflictor));
+
+		if (strcmp(sInflictor, "tf_projectile_rocket") == 0) 
+		{
+			//Ignore damage from own rocket
+			if (attacker == iClient) return Plugin_Stop;
+			//If a rocket is not own and deflected from enemy team and not during rage then stun him!
+			else if (attacker != iClient && GetEntProp(inflictor, Prop_Send, "m_iDeflected") > 0 && TF2_GetClientTeam(attacker) != TFTeam_Boss && !(g_flMonoculusRageTimer[iClient] > GetGameTime())) StunMonoculus(iClient);
+		}
+
+		return Plugin_Continue;
+	}
+
 	public void OnButton(int &buttons)
 	{
 		int iClient = this.iClient;
@@ -227,13 +250,13 @@ methodmap CMonoculus < SaxtonHaleBase
 			{
 				SDKCall_PlaySpecificSequence(iClient, "firing3");
 				
-				EmitAmbientSound(g_strMonoculusRage[GetRandomInt(0,2)], vecOrigin, iClient);
+				EmitAmbientSound(g_strMonoculusRage[GetRandomInt(0,sizeof(g_strMonoculusRage)-1)], vecOrigin, iClient);
 			}
 			else
 			{
 				SDKCall_PlaySpecificSequence(iClient, "firing1");
 
-				EmitAmbientSound(g_strMonoculusAttack[0], vecOrigin, iClient);
+				EmitAmbientSound(g_strMonoculusAttack[GetRandomInt(0,sizeof(g_strMonoculusAttack)-1)], vecOrigin, iClient);
 			}
 		}
 	}
@@ -250,5 +273,34 @@ methodmap CMonoculus < SaxtonHaleBase
 		for (int i = 0; i < sizeof(g_strMonoculusLastMan); i++) PrecacheSound(g_strMonoculusLastMan[i]);
 		for (int i = 0; i < sizeof(g_strMonoculusBackStabbed); i++) PrecacheSound(g_strMonoculusBackStabbed[i]);
 		for (int i = 0; i < sizeof(g_strMonoculusAttack); i++) PrecacheSound(g_strMonoculusAttack[i]);
+		for (int i = 0; i < sizeof(g_strMonoculusPain); i++) PrecacheSound(g_strMonoculusPain[i]);
 	}
 };
+
+public void StunMonoculus(int iClient)
+{
+	float vecOrigin[3];
+	GetClientAbsOrigin(iClient, vecOrigin);
+	
+	CreateTimer(5.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_STUNNED, vecOrigin, NULL_VECTOR));
+	CreateTimer(5.0, StunMonoculusEnd, iClient);
+	
+	SetVariantInt(1);
+	AcceptEntityInput(iClient, "SetForcedTauntCam");
+
+	SetEntityMoveType(iClient, MOVETYPE_NONE);
+	SDKCall_PlaySpecificSequence(iClient, "stunned");
+
+	EmitAmbientSound(g_strMonoculusBackStabbed[GetRandomInt(0,sizeof(g_strMonoculusBackStabbed)-1)], vecOrigin, iClient);
+
+	TF2_StunPlayer(iClient, 5.0, 0.0, TF_STUNFLAG_NOSOUNDOREFFECT, 0);
+}
+
+public Action StunMonoculusEnd(Handle timer, int iClient)
+{
+	SetEntityMoveType(iClient, MOVETYPE_WALK);
+	SetVariantInt(0);
+	AcceptEntityInput(iClient, "SetForcedTauntCam");
+
+	return Plugin_Continue;
+}
