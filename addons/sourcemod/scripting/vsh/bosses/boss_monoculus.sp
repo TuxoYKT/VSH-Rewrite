@@ -11,7 +11,7 @@ static float g_flMonoculusLastAttack[TF_MAXPLAYERS];
 static float g_flMonoculusAttackRateDuringRage[TF_MAXPLAYERS];
 static float g_flRandomAnimationTimer[TF_MAXPLAYERS];
 
-static int g_iMonoculusParticle[TF_MAXPLAYERS];
+static bool g_bMonoculusStunned[TF_MAXPLAYERS];
 
 static char g_strMonoculusRoundStart[][] = {
 	"vo/halloween_eyeball/eyeball_biglaugh01.mp3"
@@ -163,13 +163,13 @@ methodmap CMonoculus < SaxtonHaleBase
 		if (this.bSuperRage)
 		{
 			g_flMonoculusAttackRateDuringRage[iClient] = 0.4;
-			g_iMonoculusParticle[iClient] = TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, iClient);
+			CreateTimer(15.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, iClient));
 			g_flMonoculusRageTimer[iClient] = GetGameTime() + 5.0;
 		}
 		else
 		{
 			g_flMonoculusAttackRateDuringRage[iClient] = 0.3;
-			g_iMonoculusParticle[iClient] = TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_GRUMPY, vecOrigin, NULL_VECTOR, true, iClient);
+			CreateTimer(10.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, iClient));
 		}
 
 		g_flMonoculusRageTimer[iClient] = GetGameTime() + 10.0;
@@ -185,7 +185,7 @@ methodmap CMonoculus < SaxtonHaleBase
 			g_flMonoculusRageTimer[iClient] = 0.0;
 			g_flMonoculusAttackRateDuringRage[iClient] = 0.0;
 
-			RemoveEntity(g_iMonoculusParticle[iClient]);
+//			RemoveEntity(g_iMonoculusParticle[iClient]);
 		}
 
 		//Play idle animations
@@ -218,46 +218,9 @@ methodmap CMonoculus < SaxtonHaleBase
 
 	public void OnButton(int &buttons)
 	{
-		int iClient = this.iClient;
-
-		float vecOrigin[3], vecAngles[3], vecVelocity[3];
-		GetClientEyePosition(iClient, vecOrigin);
-		GetClientEyeAngles(iClient, vecAngles);
-
-		if (buttons & IN_ATTACK && IsPlayerAlive(iClient) && g_flMonoculusLastAttack[iClient] != 0.0 && g_flMonoculusLastAttack[iClient] < GetGameTime() - 0.8 + g_flMonoculusAttackRateDuringRage[iClient])
+		if (buttons & IN_ATTACK)
 		{
-			g_flMonoculusLastAttack[iClient] = GetGameTime();
-
-			int iRocket = CreateEntityByName("tf_projectile_rocket");
-			if (iRocket > MaxClients)
-			{
-				SetEntProp(iRocket, Prop_Send, "m_iTeamNum", GetClientTeam(iClient));
-				SetEntProp(iRocket, Prop_Send, "m_iDeflected", 1);
-				SetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity", iClient);
-				SetEntDataFloat(iRocket, FindSendPropInfo("CTFProjectile_Rocket", "m_iDeflected") + 4, 60.0, true);
-
-				DispatchSpawn(iRocket);
-
-				SetEntityModel(iRocket, EYEPROJECTILE_MODEL);
-
-				GetAngleVectors(vecAngles, vecVelocity, NULL_VECTOR, NULL_VECTOR);
-				ScaleVector(vecVelocity, 900.0);
-
-				TeleportEntity(iRocket, vecOrigin, vecAngles, vecVelocity);
-			}
-
-			if (g_flMonoculusRageTimer[iClient] > GetGameTime())
-			{
-				SDKCall_PlaySpecificSequence(iClient, "firing3");
-				
-				EmitAmbientSound(g_strMonoculusRage[GetRandomInt(0,sizeof(g_strMonoculusRage)-1)], vecOrigin, iClient);
-			}
-			else
-			{
-				SDKCall_PlaySpecificSequence(iClient, "firing1");
-
-				EmitAmbientSound(g_strMonoculusAttack[GetRandomInt(0,sizeof(g_strMonoculusAttack)-1)], vecOrigin, iClient);
-			}
+			ShootRocket(this.iClient);
 		}
 	}
 	
@@ -281,6 +244,8 @@ public void StunMonoculus(int iClient)
 {
 	float vecOrigin[3];
 	GetClientAbsOrigin(iClient, vecOrigin);
+
+	g_bMonoculusStunned[iClient] = true;
 	
 	CreateTimer(5.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_STUNNED, vecOrigin, NULL_VECTOR));
 	CreateTimer(5.0, StunMonoculusEnd, iClient);
@@ -291,6 +256,8 @@ public void StunMonoculus(int iClient)
 	SetEntityMoveType(iClient, MOVETYPE_NONE);
 	SDKCall_PlaySpecificSequence(iClient, "stunned");
 
+	PrintCenterText(iClient, "You are stunned from a reflected rocket!");
+
 	EmitAmbientSound(g_strMonoculusBackStabbed[GetRandomInt(0,sizeof(g_strMonoculusBackStabbed)-1)], vecOrigin, iClient);
 
 	TF2_StunPlayer(iClient, 5.0, 0.0, TF_STUNFLAG_NOSOUNDOREFFECT, 0);
@@ -298,9 +265,54 @@ public void StunMonoculus(int iClient)
 
 public Action StunMonoculusEnd(Handle timer, int iClient)
 {
+	g_bMonoculusStunned[iClient] = false;
+
 	SetEntityMoveType(iClient, MOVETYPE_WALK);
 	SetVariantInt(0);
 	AcceptEntityInput(iClient, "SetForcedTauntCam");
 
 	return Plugin_Continue;
+}
+
+public void ShootRocket(int iClient)
+{
+	float vecOrigin[3], vecAngles[3], vecVelocity[3];
+	GetClientEyePosition(iClient, vecOrigin);
+	GetClientEyeAngles(iClient, vecAngles);
+
+	if (IsPlayerAlive(iClient) && g_flMonoculusLastAttack[iClient] != 0.0 && g_flMonoculusLastAttack[iClient] < GetGameTime() - 0.8 + g_flMonoculusAttackRateDuringRage[iClient] && !g_bMonoculusStunned[iClient])
+	{
+		g_flMonoculusLastAttack[iClient] = GetGameTime();
+
+		int iRocket = CreateEntityByName("tf_projectile_rocket");
+		if (iRocket > MaxClients)
+		{
+			SetEntProp(iRocket, Prop_Send, "m_iTeamNum", GetClientTeam(iClient));
+			SetEntProp(iRocket, Prop_Send, "m_iDeflected", 1);
+			SetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity", iClient);
+			SetEntDataFloat(iRocket, FindSendPropInfo("CTFProjectile_Rocket", "m_iDeflected") + 4, 60.0, true);
+
+			DispatchSpawn(iRocket);
+
+			SetEntityModel(iRocket, EYEPROJECTILE_MODEL);
+
+			GetAngleVectors(vecAngles, vecVelocity, NULL_VECTOR, NULL_VECTOR);
+			ScaleVector(vecVelocity, 900.0);
+
+			TeleportEntity(iRocket, vecOrigin, vecAngles, vecVelocity);
+		}
+
+		if (g_flMonoculusRageTimer[iClient] > GetGameTime())
+		{
+			SDKCall_PlaySpecificSequence(iClient, "firing3");
+			
+			EmitAmbientSound(g_strMonoculusRage[GetRandomInt(0,sizeof(g_strMonoculusRage)-1)], vecOrigin, iClient);
+		}
+		else
+		{
+			SDKCall_PlaySpecificSequence(iClient, "firing1");
+
+			EmitAmbientSound(g_strMonoculusAttack[GetRandomInt(0,sizeof(g_strMonoculusAttack)-1)], vecOrigin, iClient);
+		}
+	}
 }
