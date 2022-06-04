@@ -111,6 +111,11 @@ public void Monoculus_OnSpawn(SaxtonHaleBase boss)
 	259: Deals 3x falling damage to the player you land on
 	214: kill_eater
 	*/
+
+	float vecOrigin[3];
+	vecOrigin[2] += 48.0;
+	SetVariantVector3D(vecOrigin);
+	AcceptEntityInput(iClient, "SetCustomModelOffset");
 }
 
 public void Monoculus_GetModel(SaxtonHaleBase boss, char[] sModel, int length)
@@ -261,7 +266,7 @@ public void ShootRocket(int iClient)
 		return;
 
 	// Rocket cooldown
-	if (g_flMonoculusLastAttack[iClient] > GetGameTime() - 0.8)
+	if (g_flMonoculusLastAttack[iClient] < GetGameTime() - 0.8)
 		return;
 
 	// If boss stunned then don't allow it to shoot
@@ -283,7 +288,7 @@ public void ShootRocket(int iClient)
 		SetEntityModel(iRocket, EYEPROJECTILE_MODEL);
 		// Spawn rocket in front of player
 		GetAngleVectors(vecAngles, vecVelocity, NULL_VECTOR, NULL_VECTOR);
-		ScaleVector(vecVelocity, 900.0);
+		ScaleVector(vecVelocity, 1200.0);
 		TeleportEntity(iRocket, vecOrigin, vecAngles, vecVelocity);
 	}
 
