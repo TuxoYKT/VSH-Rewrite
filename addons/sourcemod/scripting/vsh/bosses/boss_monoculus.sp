@@ -1,6 +1,19 @@
 #define MONOCULUS_MODEL			"models/props_halloween/halloween_demoeye.mdl"
 #define EYEPROJECTILE_MODEL		"models/props_halloween/eyeball_projectile.mdl"
 
+#define PARTICLE_EYEBALL_AURA_ANGRY		"eb_aura_angry01"
+#define PARTICLE_EYEBALL_AURA_CALM		"eb_aura_calm01"
+#define PARTICLE_EYEBALL_AURA_GRUMPY	"eb_aura_grumpy01"
+#define PARTICLE_EYEBALL_AURA_STUNNED	"eb_aura_stunned01"
+
+static float g_flMonoculusRageTimer[TF_MAXPLAYERS];
+static float g_flMonoculusLastAttack[TF_MAXPLAYERS];
+static float g_flMonoculusAttackRateDuringRage[TF_MAXPLAYERS];
+static float g_flRandomAnimationTimer[TF_MAXPLAYERS];
+
+static bool g_bMonoculusStunned[TF_MAXPLAYERS];
+
+
 static char g_strMonoculusRoundStart[][] = {
 	"vo/halloween_eyeball/eyeball_biglaugh01.mp3"
 };
@@ -57,6 +70,10 @@ public void Monoculus_Create(SaxtonHaleBase boss)
 	boss.flHealthExponential = 1.05;
 	boss.nClass = TFClass_DemoMan;
 	boss.iMaxRageDamage = 2000;
+	
+	g_flMonoculusRageTimer[boss.iClient] = 0.0;
+	g_flMonoculusLastAttack[boss.iClient] = GetGameTime();
+	g_flRandomAnimationTimer[boss.iClient] = GetGameTime();
 }
 
 public void Monoculus_GetBossName(SaxtonHaleBase boss, char[] sName, int length)
@@ -142,3 +159,177 @@ public void Monoculus_Precache(SaxtonHaleBase boss)
 	for (int i = 0; i < sizeof(g_strMonoculusPain); i++) PrecacheSound(g_strMonoculusPain[i]);
 }
 
+public void Monoculus_OnButton(SaxtonHaleBase boss, int &buttons)
+{
+	if (buttons & IN_ATTACK)
+	{
+		ShootRocket(boss.iClient);
+	}
+}
+
+public void Monoculus_OnThink(SaxtonHaleBase boss)
+{
+	// Make sure the boss is alive
+	if (IsPlayerAlive(boss.iClient))
+	{
+		return;
+	}
+	// Make sure the rage is empty
+	if (g_flMonoculusRageTimer[boss.iClient] == 0.0)
+	{
+		return;
+	}
+
+	// Rage ends here
+	if (g_flMonoculusRageTimer[boss.iClient] <= GetGameTime())
+	{
+		g_flMonoculusRageTimer[boss.iClient] = 0.0;
+		g_flMonoculusAttackRateDuringRage[boss.iClient] = 0.0;
+	}
+	
+	// Play idle animations
+	if (g_flRandomAnimationTimer[boss.iClient] <= GetGameTime())
+	{
+		// Don't play animation if the boss attacked
+		if (!(g_flMonoculusLastAttack[boss.iClient] < GetGameTime() - 0.8))
+		{
+			return;
+		}
+
+		char sAnim[128];
+		Format(sAnim, sizeof(sAnim), "lookaround%i", GetRandomInt(1,3));
+		SDKCall_PlaySpecificSequence(boss.iClient, sAnim);
+		g_flRandomAnimationTimer[boss.iClient] = GetGameTime() + 10.0;
+	}
+}
+
+public void Monoculus_OnRage(SaxtonHaleBase boss)
+{
+	float vecOrigin[3];
+	GetClientAbsOrigin(boss.iClient, vecOrigin);
+
+	vecOrigin[2] += 48.0;
+	if (boss.bSuperRage)
+	{
+		g_flMonoculusAttackRateDuringRage[boss.iClient] = 0.4;
+		CreateTimer(15.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, boss.iClient));
+		g_flMonoculusRageTimer[boss.iClient] = GetGameTime() + 5.0;
+		return;
+	}
+
+	g_flMonoculusAttackRateDuringRage[boss.iClient] = 0.3;
+	CreateTimer(10.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, boss.iClient));
+	g_flMonoculusRageTimer[boss.iClient] = GetGameTime() + 10.0;	
+}
+
+public Action Monoculus_OnTakeDamage(SaxtonHaleBase boss, int &attacker, int &inflictor, int &damage, int &damagetype)
+{
+	char sInflictor[32];
+	GetEdictClassname(inflictor, sInflictor, sizeof(sInflictor));
+
+	// Check for rocket damage
+	if (strcmp(sInflictor, "tf_projectile_rocket") != 0) 
+		return Plugin_Continue;
+
+	// Ignore damage from own rockets
+	if (attacker == boss.iClient) 
+		return Plugin_Stop;
+
+	// Check for deflected rocket
+	if (GetEntProp(inflictor, Prop_Send, "m_iDeflected") == 0) 
+		return Plugin_Continue;
+
+	// Check if boss is not in rage mode
+	if (!(g_flMonoculusRageTimer[boss.iClient] > GetGameTime())) 
+		StunMonoculus(boss.iClient);
+
+	return Plugin_Continue;
+}
+
+public void ShootRocket(int iClient)
+{	
+	// Make sure player is alive and well
+	if (!IsPlayerAlive(iClient))
+		return;
+
+	float vecOrigin[3], vecAngles[3], vecVelocity[3];
+	GetClientEyePosition(iClient, vecOrigin);
+	GetClientEyeAngles(iClient, vecAngles);
+
+	// Make sure
+	if (g_flMonoculusLastAttack[iClient] == 0.0)
+		return;
+
+	// Rocket cooldown
+	if (g_flMonoculusLastAttack[iClient] > GetGameTime() - 0.8)
+		return;
+
+	// If boss stunned then don't allow it to shoot
+	if (g_bMonoculusStunned[iClient])
+		return;
+
+	int iRocket = CreateEntityByName("tf_projectile_rocket")
+	if (iRocket > MaxClients)
+	{
+		// Make it deflected so it can damage players
+		SetEntProp(iRocket, Prop_Send, "m_iDeflected", 1);
+		// Make boss the owner of the eyeball
+		SetEntProp(iRocket, Prop_Send, "m_iTeamNum", GetClientTeam(iClient));
+		SetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity", iClient);
+		// Set rocket damage
+		SetEntDataFloat(iRocket, FindSendPropInfo("CTFProjectile_Rocket", "m_iDeflected") + 4, 60.0, true);
+		// Set rocket model
+		DispatchSpawn(iRocket);
+		SetEntityModel(iRocket, EYEPROJECTILE_MODEL);
+		// Spawn rocket in front of player
+		GetAngleVectors(vecAngles, vecVelocity, NULL_VECTOR, NULL_VECTOR);
+		ScaleVector(vecVelocity, 900.0);
+		TeleportEntity(iRocket, vecOrigin, vecAngles, vecVelocity);
+	}
+
+	// if enraged then play different animation 
+	if (g_flMonoculusRageTimer[iClient] > GetGameTime())
+	{
+		SDKCall_PlaySpecificSequence(iClient, "firing3");
+		EmitAmbientSound(g_strMonoculusRage[GetRandomInt(0,sizeof(g_strMonoculusRage)-1)], vecOrigin, iClient);
+		return;
+	}
+
+	SDKCall_PlaySpecificSequence(iClient, "firing1");
+	EmitAmbientSound(g_strMonoculusAttack[GetRandomInt(0,sizeof(g_strMonoculusAttack)-1)], vecOrigin, iClient);
+	
+}
+
+public void StunMonoculus(int iClient)
+{
+	float vecOrigin[3];
+	GetClientAbsOrigin(iClient, vecOrigin);
+
+	g_bMonoculusStunned[iClient] = true;
+	
+	CreateTimer(5.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_STUNNED, vecOrigin, NULL_VECTOR));
+	CreateTimer(5.0, StunMonoculusEnd, iClient);
+	
+	SetVariantInt(1);
+	AcceptEntityInput(iClient, "SetForcedTauntCam");
+
+	SetEntityMoveType(iClient, MOVETYPE_NONE);
+	SDKCall_PlaySpecificSequence(iClient, "stunned");
+
+	PrintCenterText(iClient, "You are stunned from a reflected rocket!");
+
+	EmitAmbientSound(g_strMonoculusBackStabbed[GetRandomInt(0,sizeof(g_strMonoculusBackStabbed)-1)], vecOrigin, iClient);
+
+	TF2_StunPlayer(iClient, 5.0, 0.0, TF_STUNFLAG_NOSOUNDOREFFECT, 0);
+}
+
+public Action StunMonoculusEnd(Handle timer, int iClient)
+{
+	g_bMonoculusStunned[iClient] = false;
+
+	SetEntityMoveType(iClient, MOVETYPE_WALK);
+	SetVariantInt(0);
+	AcceptEntityInput(iClient, "SetForcedTauntCam");
+
+	return Plugin_Continue;
+}
