@@ -266,12 +266,14 @@ public void ShootRocket(int iClient)
 		return;
 
 	// Rocket cooldown
-	if (g_flMonoculusLastAttack[iClient] < GetGameTime() - 0.8)
+	if (g_flMonoculusLastAttack[iClient] > GetGameTime() - 0.8)
 		return;
 
 	// If boss stunned then don't allow it to shoot
 	if (g_bMonoculusStunned[iClient])
 		return;
+
+	g_flMonoculusLastAttack[iClient] = GetGameTime();
 
 	int iRocket = CreateEntityByName("tf_projectile_rocket")
 	if (iRocket > MaxClients)
