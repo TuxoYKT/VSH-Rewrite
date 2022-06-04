@@ -214,6 +214,8 @@ public void Monoculus_OnRage(SaxtonHaleBase boss)
 	GetClientAbsOrigin(boss.iClient, vecOrigin);
 
 	vecOrigin[2] += 48.0;
+	g_flMonoculusAttackRateDuringRage[boss.iClient] = 1.0;
+	
 	if (boss.bSuperRage)
 	{
 		CreateTimer(15.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, boss.iClient));
@@ -221,7 +223,6 @@ public void Monoculus_OnRage(SaxtonHaleBase boss)
 		return;
 	}
 
-	g_flMonoculusAttackRateDuringRage[boss.iClient] = 1.0;
 	CreateTimer(10.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, boss.iClient));
 	g_flMonoculusRageTimer[boss.iClient] = GetGameTime() + 10.0;	
 }
