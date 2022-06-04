@@ -175,7 +175,7 @@ public void Monoculus_OnButton(SaxtonHaleBase boss, int &buttons)
 public void Monoculus_OnThink(SaxtonHaleBase boss)
 {
 	// Make sure the boss is alive
-	if (IsPlayerAlive(boss.iClient))
+	if (!IsPlayerAlive(boss.iClient))
 	{
 		return;
 	}
@@ -216,13 +216,12 @@ public void Monoculus_OnRage(SaxtonHaleBase boss)
 	vecOrigin[2] += 48.0;
 	if (boss.bSuperRage)
 	{
-		g_flMonoculusAttackRateDuringRage[boss.iClient] = 0.4;
 		CreateTimer(15.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, boss.iClient));
-		g_flMonoculusRageTimer[boss.iClient] = GetGameTime() + 5.0;
+		g_flMonoculusRageTimer[boss.iClient] = GetGameTime() + 15.0;
 		return;
 	}
 
-	g_flMonoculusAttackRateDuringRage[boss.iClient] = 0.3;
+	g_flMonoculusAttackRateDuringRage[boss.iClient] = 1.0;
 	CreateTimer(10.0, Timer_EntityCleanup, TF2_SpawnParticle(PARTICLE_EYEBALL_AURA_ANGRY, vecOrigin, NULL_VECTOR, true, boss.iClient));
 	g_flMonoculusRageTimer[boss.iClient] = GetGameTime() + 10.0;	
 }
@@ -266,7 +265,7 @@ public void ShootRocket(int iClient)
 		return;
 
 	// Rocket cooldown
-	if (g_flMonoculusLastAttack[iClient] > GetGameTime() - 0.8)
+	if (g_flMonoculusLastAttack[iClient] > GetGameTime() - 1.5 + g_flMonoculusAttackRateDuringRage[iClient])
 		return;
 
 	// If boss stunned then don't allow it to shoot
