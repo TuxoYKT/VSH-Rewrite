@@ -115,7 +115,7 @@ public void Monoculus_OnSpawn(SaxtonHaleBase boss)
 	float vecOrigin[3];
 	vecOrigin[2] += 48.0;
 	SetVariantVector3D(vecOrigin);
-	AcceptEntityInput(iClient, "SetCustomModelOffset");
+	AcceptEntityInput(boss.iClient, "SetCustomModelOffset");
 }
 
 public void Monoculus_GetModel(SaxtonHaleBase boss, char[] sModel, int length)
