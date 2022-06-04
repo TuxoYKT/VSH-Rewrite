@@ -174,6 +174,21 @@ public void Monoculus_OnButton(SaxtonHaleBase boss, int &buttons)
 
 public void Monoculus_OnThink(SaxtonHaleBase boss)
 {
+	// Play idle animations
+	if (g_flRandomAnimationTimer[boss.iClient] <= GetGameTime())
+	{
+		// Don't play animation if the boss attacked
+		if (g_flMonoculusLastAttack[boss.iClient] > GetGameTime() - 1.5 + g_flMonoculusAttackRateDuringRage[boss.iClient])
+		{
+			return;
+		}
+
+		char sAnim[128];
+		Format(sAnim, sizeof(sAnim), "lookaround%i", GetRandomInt(1,3));
+		SDKCall_PlaySpecificSequence(boss.iClient, sAnim);
+		g_flRandomAnimationTimer[boss.iClient] = GetGameTime() + 10.0;
+	}
+
 	// Make sure the boss is alive
 	if (!IsPlayerAlive(boss.iClient))
 	{
@@ -190,21 +205,6 @@ public void Monoculus_OnThink(SaxtonHaleBase boss)
 	{
 		g_flMonoculusRageTimer[boss.iClient] = 0.0;
 		g_flMonoculusAttackRateDuringRage[boss.iClient] = 0.0;
-	}
-	
-	// Play idle animations
-	if (g_flRandomAnimationTimer[boss.iClient] <= GetGameTime())
-	{
-		// Don't play animation if the boss attacked
-		if (!(g_flMonoculusLastAttack[boss.iClient] < GetGameTime() - 0.8))
-		{
-			return;
-		}
-
-		char sAnim[128];
-		Format(sAnim, sizeof(sAnim), "lookaround%i", GetRandomInt(1,3));
-		SDKCall_PlaySpecificSequence(boss.iClient, sAnim);
-		g_flRandomAnimationTimer[boss.iClient] = GetGameTime() + 10.0;
 	}
 }
 
