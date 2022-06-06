@@ -167,9 +167,8 @@ public void Monoculus_Precache(SaxtonHaleBase boss)
 public void Monoculus_OnButton(SaxtonHaleBase boss, int &buttons)
 {
 	if (buttons & IN_ATTACK)
-	{
 		ShootRocket(boss.iClient);
-	}
+
 }
 
 public void Monoculus_OnThink(SaxtonHaleBase boss)
@@ -177,17 +176,30 @@ public void Monoculus_OnThink(SaxtonHaleBase boss)
 	// Play idle animations
 	if (g_flRandomAnimationTimer[boss.iClient] <= GetGameTime())
 	{
-		// Don't play animation if the boss attacked
+		/* // Don't play animation if the boss attacked
 		if (g_flMonoculusLastAttack[boss.iClient] > GetGameTime() - 1.5 + g_flMonoculusAttackRateDuringRage[boss.iClient])
 		{
 			return;
-		}
+		} */
 
 		char sAnim[128];
 		Format(sAnim, sizeof(sAnim), "lookaround%i", GetRandomInt(1,3));
 		SDKCall_PlaySpecificSequence(boss.iClient, sAnim);
 		g_flRandomAnimationTimer[boss.iClient] = GetGameTime() + 10.0;
 	}
+
+	// Limit Monoculus height gain
+	float vecPos[3], vecEndPos[3], vecVel[3];
+	GetClientEyePosition(boss.iClient, vecPos);
+	TR_TraceRayFilter(vecPos, view_as<float>( { 90.0, 0.0, 0.0 } ), MASK_SOLID, RayType_Infinite, TraceRay_DontHitPlayersAndObjects);
+	TR_GetEndPosition(vecEndPos);
+	float flDistance = GetVectorDistance(vecPos, vecEndPos);
+
+   	GetEntPropVector(boss.iClient, Prop_Data, "m_vecVelocity", vecVel);
+	AddVectors(vecVel, view_as<float>( { 0.0, 0.0, -30.0 } ), vecVel);
+
+	if (flDistance > 384 + 64)
+		TeleportEntity(boss.iClient, NULL_VECTOR, NULL_VECTOR, vecVel);
 
 	// Make sure the boss is alive
 	if (!IsPlayerAlive(boss.iClient))
