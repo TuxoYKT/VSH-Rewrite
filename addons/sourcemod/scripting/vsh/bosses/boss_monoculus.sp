@@ -6,6 +6,8 @@
 #define PARTICLE_EYEBALL_AURA_GRUMPY	"eb_aura_grumpy01"
 #define PARTICLE_EYEBALL_AURA_STUNNED	"eb_aura_stunned01"
 
+#define MAX_DISTANCE_FROM_THE_FLOOR		576
+
 static float g_flMonoculusRageTimer[TF_MAXPLAYERS];
 static float g_flMonoculusLastAttack[TF_MAXPLAYERS];
 static float g_flMonoculusAttackRateDuringRage[TF_MAXPLAYERS];
@@ -178,7 +180,7 @@ public void Monoculus_OnButton(SaxtonHaleBase boss, int &buttons)
 	if (buttons & IN_ATTACK)
 		ShootRocket(boss.iClient);
 
-	if (g_flDistance[boss.iClient] > 512 + 64 &&
+	if (g_flDistance[boss.iClient] > MAX_DISTANCE_FROM_THE_FLOOR &&
 	    buttons & IN_JUMP)
 		buttons &= ~IN_JUMP;
 }
@@ -210,7 +212,7 @@ public void Monoculus_OnThink(SaxtonHaleBase boss)
    	GetEntPropVector(boss.iClient, Prop_Data, "m_vecVelocity", vecVel);
 	AddVectors(vecVel, view_as<float>( { 0.0, 0.0, -30.0 } ), vecVel);
 
-	if (g_flDistance[boss.iClient] > 512 + 64)
+	if (g_flDistance[boss.iClient] > MAX_DISTANCE_FROM_THE_FLOOR)
 		TeleportEntity(boss.iClient, NULL_VECTOR, NULL_VECTOR, vecVel);
 
 	// Make sure the boss is alive
