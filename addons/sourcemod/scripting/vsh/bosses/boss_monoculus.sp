@@ -144,8 +144,13 @@ public void Monoculus_GetSoundKill(SaxtonHaleBase boss, char[] sSound, int lengt
 
 public Action Monoculus_OnSoundPlayed(SaxtonHaleBase boss, int clients[MAXPLAYERS], int &numClients, char sample[PLATFORM_MAX_PATH], int &channel, float &volume, int &level, int &pitch, int &flags, char soundEntry[PLATFORM_MAX_PATH], int &seed)
 {
-	if (strncmp(sample, "vo/demoman", 10) == 0)//Block voicelines but allow Monoculus voicelines
+	if (strncmp(sample, "vo/", 3) == 0)//Block voicelines but allow Monoculus voicelines
+	{
+		if (StrContains(sample, "vo/halloween_boss/", false) == 0)
+			return Plugin_Continue;
 		return Plugin_Handled;
+	}
+	
 	return Plugin_Continue;
 }
 
