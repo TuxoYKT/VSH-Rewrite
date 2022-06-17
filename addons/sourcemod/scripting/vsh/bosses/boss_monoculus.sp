@@ -97,16 +97,20 @@ public void Monoculus_GetBossInfo(SaxtonHaleBase boss, char[] sInfo, int length)
 public void Monoculus_OnSpawn(SaxtonHaleBase boss)
 {
 	char attribs[128];
-	Format(attribs, sizeof(attribs), "2 ; 2.80 ; 252 ; 0.5 ; 259 ; 1.0 ; 214 ; %d", GetRandomInt(9999, 99999));
-	int iWeapon = boss.CallFunction("CreateWeapon", 195, "tf_weapon_shovel", 100, TFQual_Strange, attribs);
+	Format(attribs, sizeof(attribs), "1 ; 0.0 ; 252 ; 0.5 ; 259 ; 1.0 ; 214 ; %d", GetRandomInt(9999, 99999));
+	int iWeapon = boss.CallFunction("CreateWeapon", 195, "tf_weapon_fists", 100, TFQual_Strange, attribs);
 	if (iWeapon > MaxClients)
 		SetEntPropEnt(boss.iClient, Prop_Send, "m_hActiveWeapon", iWeapon);
 
+	// Hide weapon from view
+	SetEntPropFloat(iWeapon, Prop_Send, "m_flModelScale", 0.001);
+
+	// Make boss float
 	TF2_AddCondition(boss.iClient, TFCond_SwimmingNoEffects, TFCondDuration_Infinite);
 	/*
 	Fist attributes:
 	
-	2: damage bonus
+	1: damage penalty
 	252: reduction in push force taken from damage
 	259: Deals 3x falling damage to the player you land on
 	214: kill_eater
@@ -150,7 +154,7 @@ public Action Monoculus_OnSoundPlayed(SaxtonHaleBase boss, int clients[MAXPLAYER
 			return Plugin_Continue;
 		return Plugin_Handled;
 	}
-	
+
 	return Plugin_Continue;
 }
 
