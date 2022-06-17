@@ -1,5 +1,6 @@
 #define MONOCULUS_MODEL			"models/props_halloween/halloween_demoeye.mdl"
 #define EYEPROJECTILE_MODEL		"models/props_halloween/eyeball_projectile.mdl"
+#define BALL_HITBOX_MODEL		"models/props_halloween/hwn_kart_ball01.mdl"
 
 #define PARTICLE_EYEBALL_AURA_ANGRY		"eb_aura_angry01"
 #define PARTICLE_EYEBALL_AURA_CALM		"eb_aura_calm01"
@@ -15,7 +16,6 @@ static float g_flRandomAnimationTimer[TF_MAXPLAYERS];
 static float g_flDistance[TF_MAXPLAYERS];
 
 static bool g_bMonoculusStunned[TF_MAXPLAYERS];
-
 
 static char g_strMonoculusRoundStart[][] = {
 	"vo/halloween_eyeball/eyeball_biglaugh01.mp3"
@@ -119,10 +119,31 @@ public void Monoculus_OnSpawn(SaxtonHaleBase boss)
 	214: kill_eater
 	*/
 
-	float vecOrigin[3];
-	vecOrigin[2] += 48.0;
-	SetVariantVector3D(vecOrigin);
+	SetVariantVector3D(view_as<float>( { 0.0, 0.0, 48.0 } ));
 	AcceptEntityInput(boss.iClient, "SetCustomModelOffset");
+
+	int iHitbox = CreateEntityByName("prop_physics_override");
+	if (iHitbox > MaxClients)
+	{
+		float vecOrigin[3];
+		GetClientAbsOrigin(boss.iClient, vecOrigin);
+		vecOrigin[2] += 48.0;
+
+		SetEntPropEnt(iHitbox, Prop_Send, "m_hOwnerEntity", boss.iClient);
+		DispatchKeyValue(iHitbox, "model", BALL_HITBOX_MODEL);
+		SetEntProp(iHitbox, Prop_Send, "m_nSolidType", 6);
+		SetEntProp(iHitbox, Prop_Send, "m_CollisionGroup", 11);
+		DispatchKeyValue(iHitbox, "rendermode", "10"); // Do not render
+		DispatchKeyValue(iHitbox, "modelscale", "0.72");
+		TeleportEntity(iHitbox, vecOrigin, NULL_VECTOR, NULL_VECTOR);
+
+		SetVariantString("!activator");
+		AcceptEntityInput(iHitbox, "SetParent", boss.iClient);
+
+		DispatchSpawn(iHitbox);
+
+		SDKHook(iHitbox, SDKHook_OnTakeDamage, Hitbox_OnTakeDamage);
+	}
 }
 
 public void Monoculus_GetModel(SaxtonHaleBase boss, char[] sModel, int length)
@@ -204,7 +225,7 @@ public void Monoculus_OnThink(SaxtonHaleBase boss)
 
 	// Limit Monoculus height gain
 	float vecPos[3], vecEndPos[3], vecVel[3];
-	GetClientEyePosition(boss.iClient, vecPos);
+	GetClientAbsOrigin(boss.iClient, vecPos);
 	TR_TraceRayFilter(vecPos, view_as<float>( { 90.0, 0.0, 0.0 } ), MASK_SOLID, RayType_Infinite, TraceRay_DontHitPlayersAndObjects);
 	TR_GetEndPosition(vecEndPos);
 	g_flDistance[boss.iClient] = GetVectorDistance(vecPos, vecEndPos);
@@ -310,13 +331,13 @@ public void ShootRocket(int iClient)
 		SetEntProp(iRocket, Prop_Send, "m_iTeamNum", GetClientTeam(iClient));
 		SetEntPropEnt(iRocket, Prop_Send, "m_hOwnerEntity", iClient);
 		// Set rocket damage
-		SetEntDataFloat(iRocket, FindSendPropInfo("CTFProjectile_Rocket", "m_iDeflected") + 4, 60.0, true);
+		SetEntDataFloat(iRocket, FindSendPropInfo("CTFProjectile_Rocket", "m_iDeflected") + 4, 90.0, true);
 		// Set rocket model
 		DispatchSpawn(iRocket);
 		SetEntityModel(iRocket, EYEPROJECTILE_MODEL);
 		// Spawn rocket in front of player
 		GetAngleVectors(vecAngles, vecVelocity, NULL_VECTOR, NULL_VECTOR);
-		ScaleVector(vecVelocity, 1200.0);
+		ScaleVector(vecVelocity, 300.0);
 		TeleportEntity(iRocket, vecOrigin, vecAngles, vecVelocity);
 	}
 
@@ -363,6 +384,14 @@ public Action StunMonoculusEnd(Handle timer, int iClient)
 	SetEntityMoveType(iClient, MOVETYPE_WALK);
 	SetVariantInt(0);
 	AcceptEntityInput(iClient, "SetForcedTauntCam");
+
+	return Plugin_Continue;
+}
+
+public Action Hitbox_OnTakeDamage(int iHitbox, int &iAttacker, int &iInflictor, float &flDamage, int &iDamageType, int &iWeapon, float iDamageForce[3], float iDamagePosition[3])
+{		
+	int iClient = GetEntPropEnt(iHitbox, Prop_Data, "m_hOwnerEntity");
+	SDKHooks_TakeDamage(iClient, iInflictor, iAttacker, flDamage, iDamageType);
 
 	return Plugin_Continue;
 }
