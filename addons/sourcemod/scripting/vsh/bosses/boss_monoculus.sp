@@ -10,6 +10,7 @@ static float g_flMonoculusRageTimer[TF_MAXPLAYERS];
 static float g_flMonoculusLastAttack[TF_MAXPLAYERS];
 static float g_flMonoculusAttackRateDuringRage[TF_MAXPLAYERS];
 static float g_flRandomAnimationTimer[TF_MAXPLAYERS];
+static float g_flDistance[TF_MAXPLAYERS];
 
 static bool g_bMonoculusStunned[TF_MAXPLAYERS];
 
@@ -154,7 +155,6 @@ public Action Monoculus_OnSoundPlayed(SaxtonHaleBase boss, int clients[MAXPLAYER
 			return Plugin_Continue;
 		return Plugin_Handled;
 	}
-
 	return Plugin_Continue;
 }
 
@@ -178,6 +178,9 @@ public void Monoculus_OnButton(SaxtonHaleBase boss, int &buttons)
 	if (buttons & IN_ATTACK)
 		ShootRocket(boss.iClient);
 
+	if (g_flDistance[boss.iClient] > 512 + 64 &&
+	    buttons & IN_JUMP)
+		buttons &= ~IN_JUMP;
 }
 
 public void Monoculus_OnThink(SaxtonHaleBase boss)
@@ -202,12 +205,12 @@ public void Monoculus_OnThink(SaxtonHaleBase boss)
 	GetClientEyePosition(boss.iClient, vecPos);
 	TR_TraceRayFilter(vecPos, view_as<float>( { 90.0, 0.0, 0.0 } ), MASK_SOLID, RayType_Infinite, TraceRay_DontHitPlayersAndObjects);
 	TR_GetEndPosition(vecEndPos);
-	float flDistance = GetVectorDistance(vecPos, vecEndPos);
+	g_flDistance[boss.iClient] = GetVectorDistance(vecPos, vecEndPos);
 
    	GetEntPropVector(boss.iClient, Prop_Data, "m_vecVelocity", vecVel);
 	AddVectors(vecVel, view_as<float>( { 0.0, 0.0, -30.0 } ), vecVel);
 
-	if (flDistance > 384 + 64)
+	if (g_flDistance[boss.iClient] > 512 + 64)
 		TeleportEntity(boss.iClient, NULL_VECTOR, NULL_VECTOR, vecVel);
 
 	// Make sure the boss is alive
