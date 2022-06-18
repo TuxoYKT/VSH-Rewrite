@@ -141,6 +141,7 @@ public void Monoculus_OnSpawn(SaxtonHaleBase boss)
 		AcceptEntityInput(iHitbox, "SetParent", boss.iClient);
 
 		DispatchSpawn(iHitbox);
+		ActivateEntity(iHitbox);
 
 		SDKHook(iHitbox, SDKHook_OnTakeDamage, Hitbox_OnTakeDamage);
 	}
@@ -224,18 +225,18 @@ public void Monoculus_OnThink(SaxtonHaleBase boss)
 	}
 
 	// Limit Monoculus height gain
-	float vecPos[3], vecEndPos[3], vecVel[3];
+	float vecPos[3], vecEndPos[3];
 	GetClientAbsOrigin(boss.iClient, vecPos);
-	TR_TraceRayFilter(vecPos, view_as<float>( { 90.0, 0.0, 0.0 } ), MASK_SOLID, RayType_Infinite, TraceRay_DontHitPlayersAndObjects);
+	TR_TraceRayFilter(vecPos, view_as<float>( { 90.0, 0.0, 0.0 } ), MASK_SOLID, RayType_Infinite, TraceFilter_Hitbox);
 	TR_GetEndPosition(vecEndPos);
 	g_flDistance[boss.iClient] = GetVectorDistance(vecPos, vecEndPos);
-
+/* 
    	GetEntPropVector(boss.iClient, Prop_Data, "m_vecVelocity", vecVel);
 	AddVectors(vecVel, view_as<float>( { 0.0, 0.0, -30.0 } ), vecVel);
 
 	if (g_flDistance[boss.iClient] > MAX_DISTANCE_FROM_THE_FLOOR)
 		TeleportEntity(boss.iClient, NULL_VECTOR, NULL_VECTOR, vecVel);
-
+ */
 	// Make sure the boss is alive
 	if (!IsPlayerAlive(boss.iClient))
 	{
@@ -394,4 +395,11 @@ public Action Hitbox_OnTakeDamage(int iHitbox, int &iAttacker, int &iInflictor, 
 	SDKHooks_TakeDamage(iClient, iInflictor, iAttacker, flDamage, iDamageType);
 
 	return Plugin_Continue;
+}
+
+public bool TraceFilter_Hitbox(int iEntity, int iMask, any iData)
+{
+	if(iEntity <= 0) return true;
+
+	return false;
 }
