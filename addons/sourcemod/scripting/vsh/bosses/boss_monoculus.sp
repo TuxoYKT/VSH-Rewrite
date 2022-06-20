@@ -338,7 +338,7 @@ public void ShootRocket(int iClient)
 		SetEntityModel(iRocket, EYEPROJECTILE_MODEL);
 		// Spawn rocket in front of player
 		GetAngleVectors(vecAngles, vecVelocity, NULL_VECTOR, NULL_VECTOR);
-		ScaleVector(vecVelocity, 300.0);
+		ScaleVector(vecVelocity, 340.0);
 		TeleportEntity(iRocket, vecOrigin, vecAngles, vecVelocity);
 	}
 
